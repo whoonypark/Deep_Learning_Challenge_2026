@@ -1,0 +1,13 @@
+# GPU environment (lab server: RTX A5000 / 3090, CUDA >= 12.0, Python >= 3.10)
+# Competition reproducibility standard: Python >= 3.10, PyTorch >= 2.0, CUDA >= 12.0
+torch>=2.4
+vllm>=0.8
+transformers>=4.51
+datasets>=2.20
+accelerate>=1.0
+peft>=0.14
+trl>=0.20
+pandas>=2.0
+numpy
+tqdm
+tensorboard

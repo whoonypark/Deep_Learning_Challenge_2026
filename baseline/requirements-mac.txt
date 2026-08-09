@@ -1,0 +1,9 @@
+# MacBook (Apple Silicon) environment - data prep + smoke tests only.
+# vLLM does not run on macOS; full inference/training happens on the lab GPU.
+torch>=2.4
+transformers>=4.51
+datasets>=2.20
+accelerate>=1.0
+pandas>=2.0
+numpy
+tqdm
