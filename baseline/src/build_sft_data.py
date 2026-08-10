@@ -6,8 +6,12 @@ dedups, caps per question, and writes a TRL prompt-completion JSONL:
 
   {"prompt": [{role,content}...], "completion": [{"role":"assistant","content": ...}]}
 
+Accepts multiple preds files (e.g. round 1 + round 2 of STaR); solutions for
+the same question are pooled across files before dedup/capping.
+
 Usage:
-  python src/build_sft_data.py --preds outputs/rs_train/preds.jsonl --out data_processed/sft.jsonl
+  python src/build_sft_data.py --preds rs_train/preds.jsonl rs_train_r2/preds.jsonl \
+      --out data_processed/sft_r2.jsonl
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ from prompts import build_messages
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--preds", required=True, help="preds.jsonl from a train_pool run")
+    ap.add_argument("--preds", required=True, nargs="+", help="one or more preds.jsonl from train_pool runs")
     ap.add_argument("--out", default=str(paths.SFT_JSONL))
     ap.add_argument("--max-per-question", type=int, default=2)
     ap.add_argument("--max-chars", type=int, default=6000, help="drop overlong solutions")
@@ -32,32 +36,41 @@ def main() -> None:
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
-    records = []
-    n_q = n_q_covered = 0
 
-    with open(args.preds) as f:
-        for line in f:
-            rec = json.loads(line)
-            n_q += 1
-            gold = rec.get("gold")
-            texts = rec.get("texts")
-            if gold is None or not texts:
-                continue
-            # strict filter: the boxed value itself must equal gold
-            good = [t.strip() for t in texts if extract_boxed_int(t) == gold]
-            good = [t for t in good if len(t) <= args.max_chars]
-            good = list(dict.fromkeys(good))  # dedup, keep order
-            if not good:
-                continue
-            n_q_covered += 1
-            rng.shuffle(good)
-            for t in good[: args.max_per_question]:
-                records.append(
-                    {
-                        "prompt": build_messages(rec["question"]),
-                        "completion": [{"role": "assistant", "content": t}],
-                    }
-                )
+    # pool correct solutions per question across all preds files
+    by_q: dict = {}  # id -> {"question": str, "good": [texts]}
+    n_q = 0
+    for preds_file in args.preds:
+        with open(preds_file) as f:
+            for line in f:
+                rec = json.loads(line)
+                gold = rec.get("gold")
+                texts = rec.get("texts")
+                if rec["id"] not in by_q:
+                    n_q += 1
+                    by_q[rec["id"]] = {"question": rec.get("question"), "good": []}
+                if gold is None or not texts:
+                    continue
+                # strict filter: the boxed value itself must equal gold
+                good = [t.strip() for t in texts if extract_boxed_int(t) == gold]
+                good = [t for t in good if len(t) <= args.max_chars]
+                by_q[rec["id"]]["good"].extend(good)
+
+    records = []
+    n_q_covered = 0
+    for qid, entry in by_q.items():
+        good = list(dict.fromkeys(entry["good"]))  # dedup, keep order
+        if not good or entry["question"] is None:
+            continue
+        n_q_covered += 1
+        rng.shuffle(good)
+        for t in good[: args.max_per_question]:
+            records.append(
+                {
+                    "prompt": build_messages(entry["question"]),
+                    "completion": [{"role": "assistant", "content": t}],
+                }
+            )
 
     rng.shuffle(records)
     out = Path(args.out)

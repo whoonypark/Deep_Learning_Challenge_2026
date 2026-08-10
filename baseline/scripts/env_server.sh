@@ -17,6 +17,15 @@ export DLC_OUTPUT_DIR="${DLC_OUTPUT_DIR:-$HOME/shared/hdd_ext/nvme1/jihoonpark22
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-9}"
 
+# conda env used ONLY for the TRL training steps (sft_lora.py, merge_lora.py).
+# Inference (vllm 0.6.1 cu118) stays in the env you launch the script from.
+# Lives on the NVMe (home filesystem is full) -> full path, used with conda -p.
+export DLC_TRAIN_ENV="${DLC_TRAIN_ENV:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/conda/dlc-train}"
+
+# home fs has ~2GB free: keep temp files on the NVMe too
+export TMPDIR="${TMPDIR:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/tmp}"
+mkdir -p "$TMPDIR"
+
 # keep the ~6 GB HF model cache on the big NVMe instead of the home quota;
 # delete these two lines if you prefer the default ~/.cache/huggingface
 export HF_HOME="${HF_HOME:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/hf_cache}"

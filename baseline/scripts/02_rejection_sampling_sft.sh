@@ -16,8 +16,10 @@ python src/infer_vllm.py --input "$DLC_OUTPUT_DIR/data_processed/train_pool.csv"
 python src/build_sft_data.py --preds "$DLC_OUTPUT_DIR/rs_train/preds.jsonl" \
     --out "$DLC_OUTPUT_DIR/data_processed/sft.jsonl"
 
-# 3) LoRA SFT
-python src/sft_lora.py --data "$DLC_OUTPUT_DIR/data_processed/sft.jsonl" \
+# 3) LoRA SFT — runs in the training env (new TRL/transformers), because the
+#    inference env pins transformers 4.45 for the cu118 vllm 0.6.1 wheel
+conda run --no-capture-output -p "$DLC_TRAIN_ENV" \
+    python src/sft_lora.py --data "$DLC_OUTPUT_DIR/data_processed/sft.jsonl" \
     --out "$DLC_OUTPUT_DIR/sft-lora-r1"
 
 # 4) evaluate the adapter on val (greedy + SC), then leaderboard
