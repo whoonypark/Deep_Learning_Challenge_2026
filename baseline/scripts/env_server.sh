@@ -4,11 +4,11 @@
 #
 # Layout on the server:
 #   code    ~/private/test/competition/deep-learning-challenge-2026/
-#   data    ~/shared/hdd_ext/nvme1/jihoonpark22/data/
-#   output  ~/shared/hdd_ext/nvme1/jihoonpark22/output/
+#   data    ~/shared/hdd_ext/nvme1/jihoonpark22/math_data/
+#   output  ~/shared/hdd_ext/nvme1/jihoonpark22/math_output/
 
-export DLC_DATA_DIR="${DLC_DATA_DIR:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/data}"
-export DLC_OUTPUT_DIR="${DLC_OUTPUT_DIR:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/output}"
+export DLC_DATA_DIR="${DLC_DATA_DIR:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/math_data}"
+export DLC_OUTPUT_DIR="${DLC_OUTPUT_DIR:-$HOME/shared/hdd_ext/nvme1/jihoonpark22/math_output}"
 
 # GPU 9 only (shared server — never grab other GPUs).
 # CUDA_DEVICE_ORDER=PCI_BUS_ID makes CUDA use the same GPU numbering as

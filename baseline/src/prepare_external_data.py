@@ -42,7 +42,12 @@ def main() -> None:
     ap.add_argument("--split", default="train_1M",
                     help="train_1M is the deduplicated 1M subset; fall back to 'train' if missing")
     ap.add_argument("--max-samples", type=int, default=100_000)
-    ap.add_argument("--max-chars", type=int, default=6000)
+    ap.add_argument("--max-chars", type=int, default=4000,
+                    help="drop overlong solutions (also avoids max_len truncation in SFT)")
+    ap.add_argument("--sources", nargs="*", default=None,
+                    help="keep only rows whose problem_source contains one of these "
+                         "substrings, e.g. --sources gsm8k (challenge data is "
+                         "word-problem style; MATH-style rows hurt — LB drop observed)")
     ap.add_argument("--include", nargs="*", default=[],
                     help="existing prompt-completion JSONL files to mix in (e.g. self-distill data)")
     ap.add_argument("--out", required=True)
@@ -64,6 +69,10 @@ def main() -> None:
 
     for row in ds:
         n_seen += 1
+        if args.sources:
+            src = str(row.get("problem_source", ""))
+            if not any(s.lower() in src.lower() for s in args.sources):
+                continue
         ans = str(row.get("expected_answer", "")).strip()
         if not _INT_RE.match(ans):
             continue

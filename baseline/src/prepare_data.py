@@ -1,5 +1,11 @@
 """Prepare challenge data: filter bad rows, make a fixed train/val split.
 
+Incorporates the community error reports (organizer-acknowledged, 2026-08):
+  organizer_report_illposed_623.csv - unanswerable questions -> DROPPED
+  organizer_report_mislabel_442.csv - wrong labels -> RELABELED with
+                                      suggested_answer (keeps 442 rows usable)
+Place both CSVs in $DLC_DATA_DIR; they are applied automatically when present.
+
 Outputs (under --out-dir):
   train_pool.csv  - cleaned training questions with integer answers
   val.csv         - held-out validation set (never train on this)
@@ -42,6 +48,24 @@ def main() -> None:
     train = train[~train["id"].isin(bad_ids)].copy()
     n1 = len(train)
 
+    # community report 1: ill-posed questions (no single integer answer) -> drop
+    n_illposed = 0
+    illposed_csv = data_dir / "organizer_report_illposed_623.csv"
+    if illposed_csv.exists():
+        illposed_ids = set(pd.read_csv(illposed_csv)["id"])
+        before = len(train)
+        train = train[~train["id"].isin(illposed_ids)].copy()
+        n_illposed = before - len(train)
+
+    # community report 2: verified wrong labels -> relabel with suggested_answer
+    n_relabel = 0
+    mislabel_csv = data_dir / "organizer_report_mislabel_442.csv"
+    if mislabel_csv.exists():
+        fix = pd.read_csv(mislabel_csv).set_index("id")["suggested_answer"]
+        mask = train["id"].isin(fix.index)
+        train.loc[mask, "answer"] = train.loc[mask, "id"].map(fix)
+        n_relabel = int(mask.sum())
+
     figure_mask = train["question"].str.contains(_UNSOLVABLE_RE)
     train = train[~figure_mask].copy()
     n2 = len(train)
@@ -57,6 +81,8 @@ def main() -> None:
 
     print(f"raw train rows          : {n0}")
     print(f"after bad-id filter     : {n1}  (-{n0 - n1})")
+    print(f"illposed dropped        : {n_illposed}")
+    print(f"mislabels relabeled     : {n_relabel}")
     print(f"after figure filter     : {n2}  (-{n1 - n2})")
     print(f"train_pool / val        : {len(pool)} / {len(val)}")
     print(f"written to              : {out_dir}")

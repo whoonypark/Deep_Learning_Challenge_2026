@@ -32,10 +32,21 @@ def main() -> None:
     ap.add_argument("--out", default=str(paths.SFT_JSONL))
     ap.add_argument("--max-per-question", type=int, default=2)
     ap.add_argument("--max-chars", type=int, default=6000, help="drop overlong solutions")
+    ap.add_argument("--only-ids", default=None,
+                    help="CSV with an `id` column: keep ONLY these question ids "
+                         "(pass the audited train_pool_clean.csv so solutions that "
+                         "matched a suspect label never enter SFT data)")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
+
+    allowed_ids = None
+    if args.only_ids:
+        import pandas as pd
+
+        allowed_ids = set(pd.read_csv(args.only_ids)["id"])
+        print(f"restricting to {len(allowed_ids)} audited-clean question ids")
 
     # pool correct solutions per question across all preds files
     by_q: dict = {}  # id -> {"question": str, "good": [texts]}
@@ -44,6 +55,8 @@ def main() -> None:
         with open(preds_file) as f:
             for line in f:
                 rec = json.loads(line)
+                if allowed_ids is not None and rec["id"] not in allowed_ids:
+                    continue
                 gold = rec.get("gold")
                 texts = rec.get("texts")
                 if rec["id"] not in by_q:
