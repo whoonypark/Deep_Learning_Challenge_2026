@@ -5,8 +5,8 @@
 #
 #   source scripts/env_colab.sh
 
-export DLC_DATA_DIR="${DLC_DATA_DIR:-/content/drive/MyDrive/dlc2026/data}"
-export DLC_OUTPUT_DIR="${DLC_OUTPUT_DIR:-/content/drive/MyDrive/dlc2026/output}"
+export DLC_DATA_DIR="${DLC_DATA_DIR:-/content/drive/MyDrive/data}"
+export DLC_OUTPUT_DIR="${DLC_OUTPUT_DIR:-/content/drive/MyDrive/output}"
 export HF_HOME="${HF_HOME:-/content/hf_cache}"
 
 mkdir -p "$DLC_OUTPUT_DIR" "$HF_HOME"
