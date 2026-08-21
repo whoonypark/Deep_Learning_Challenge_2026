@@ -12,8 +12,8 @@ code runs unchanged on the Mac (defaults) and on the lab server:
                      default: $DLC_OUTPUT_DIR/data_processed
 
 Lab server setup (set in scripts/env_server.sh):
-  DLC_DATA_DIR=$HOME/shared/hdd_ext/nvme1/jihoonpark22/math_data
-  DLC_OUTPUT_DIR=$HOME/shared/hdd_ext/nvme1/jihoonpark22/math_output
+  DLC_DATA_DIR=$HOME/shared/hdd_ext/ssd4000/jihoon/math_data
+  DLC_OUTPUT_DIR=$HOME/shared/hdd_ext/ssd4000/jihoon/math_output
 """
 
 from __future__ import annotations
