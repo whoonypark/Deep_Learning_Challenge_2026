@@ -53,15 +53,24 @@ def main() -> None:
     ap.add_argument("--max-model-len", type=int, default=4096)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--gpu-mem-util", type=float, default=0.90)
-    ap.add_argument("--limit", type=int, default=None, help="debug: only first N rows")
+    ap.add_argument("--offset", type=int, default=0,
+                    help="skip the first N rows; with --limit this selects a shard, so a "
+                         "long run can be split into pieces that each save on completion "
+                         "(a killed Colab session then costs one shard, not the whole run)")
+    ap.add_argument("--limit", type=int, default=None, help="only N rows (after --offset)")
     ap.add_argument("--no-save-texts", action="store_true", help="omit raw texts in preds.jsonl")
     args = ap.parse_args()
 
     from vllm import LLM, SamplingParams  # imported late: GPU-only dependency
 
     df = pd.read_csv(args.input)
+    if args.offset:
+        df = df.iloc[args.offset:]
     if args.limit:
         df = df.head(args.limit)
+    if df.empty:
+        print(f"no rows to process (offset={args.offset}, limit={args.limit}) - nothing to do")
+        return
     has_gold = "answer" in df.columns
 
     out_dir = Path(args.out_dir) if args.out_dir else paths.OUTPUT_DIR / Path(args.input).stem

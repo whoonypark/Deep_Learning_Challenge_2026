@@ -31,10 +31,28 @@ if step "prepare data" "$PROC/train_pool.csv"; then
     python src/prepare_data.py
 fi
 
-# 1) base-model sampling over the train pool: RS-SFT source AND audit signal
-if step "base sampling k=8 over train pool (longest step)" "$DLC_OUTPUT_DIR/rs_r1/preds.jsonl"; then
-    python src/infer_vllm.py --input "$PROC/train_pool.csv" \
-        --k 8 --temperature 1.0 --out-dir "$DLC_OUTPUT_DIR/rs_r1"
+# 1) base-model sampling over the train pool: RS-SFT source AND audit signal.
+#    SHARDED on purpose: vllm only writes preds.jsonl when a run finishes, so a
+#    single 2-3h call would lose everything if Colab drops the runtime. Each
+#    shard saves independently and is skipped on re-run; the shards are then
+#    concatenated into the preds.jsonl the later steps expect.
+SHARD=2000
+if step "base sampling k=8 over train pool (longest step, sharded)" "$DLC_OUTPUT_DIR/rs_r1/preds.jsonl"; then
+    N_ROWS=$(($(wc -l < "$PROC/train_pool.csv") - 1))
+    for ((off=0; off<N_ROWS; off+=SHARD)); do
+        SHARD_DIR=$(printf "%s/rs_r1_shards/shard_%06d" "$DLC_OUTPUT_DIR" "$off")
+        if [ -e "$SHARD_DIR/preds.jsonl" ]; then
+            echo "    [skip] shard offset $off"
+            continue
+        fi
+        echo "    [run ] shard offset $off / $N_ROWS"
+        python src/infer_vllm.py --input "$PROC/train_pool.csv" \
+            --offset "$off" --limit "$SHARD" \
+            --k 8 --temperature 1.0 --out-dir "$SHARD_DIR"
+    done
+    mkdir -p "$DLC_OUTPUT_DIR/rs_r1"
+    cat "$DLC_OUTPUT_DIR"/rs_r1_shards/shard_*/preds.jsonl > "$DLC_OUTPUT_DIR/rs_r1/preds.jsonl"
+    echo "    merged $(wc -l < "$DLC_OUTPUT_DIR/rs_r1/preds.jsonl") rows into rs_r1/preds.jsonl"
 fi
 
 # 2) label audit — residual errors the community list did not catch

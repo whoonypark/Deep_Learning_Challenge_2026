@@ -16,6 +16,17 @@ for f in deep_chal_math_train.csv train_filtered_ids.csv \
 done
 
 echo
+echo "--- torch/torchaudio CUDA consistency ---"
+python - <<'EOF'
+import importlib.util
+if importlib.util.find_spec("torchaudio") is not None:
+    print("  WARNING: torchaudio is installed. If its CUDA build differs from "
+          "torch's, `from vllm import LLM` fails. Fix: pip uninstall -y torchaudio")
+else:
+    print("  OK      torchaudio absent (transformers skips its audio path)")
+EOF
+
+echo
 echo "--- imports ---"
 python -c "import torch; print('  torch       ', torch.__version__, '| cuda', torch.version.cuda, '| gpu', torch.cuda.is_available())"
 python -c "from vllm import LLM, SamplingParams; import vllm; print('  vllm        ', vllm.__version__, 'OK')"
