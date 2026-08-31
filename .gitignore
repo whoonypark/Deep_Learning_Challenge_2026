@@ -2,3 +2,8 @@ output/
 .idea/
 challenge_intro_vid_screenshots/
 
+data/*.csv
+server_backup/
+output/
+.DS_Store
+.idea/

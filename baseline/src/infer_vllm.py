@@ -71,7 +71,10 @@ def main() -> None:
     if df.empty:
         print(f"no rows to process (offset={args.offset}, limit={args.limit}) - nothing to do")
         return
-    has_gold = "answer" in df.columns
+    # gold answers exist only if the column is present AND fully numeric —
+    # the final test_submission.csv ships an EMPTY answer column, which must
+    # not be mistaken for labels (int(NaN) would crash after generation)
+    has_gold = "answer" in df.columns and pd.to_numeric(df["answer"], errors="coerce").notna().all()
 
     out_dir = Path(args.out_dir) if args.out_dir else paths.OUTPUT_DIR / Path(args.input).stem
     out_dir.mkdir(parents=True, exist_ok=True)

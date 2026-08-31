@@ -11,12 +11,13 @@ _DLC_STORE="$HOME/shared/hdd_ext/ssd4000/jihoon"
 export DLC_DATA_DIR="${DLC_DATA_DIR:-$_DLC_STORE/math_data}"
 export DLC_OUTPUT_DIR="${DLC_OUTPUT_DIR:-$_DLC_STORE/math_output}"
 
-# GPU 8 only (RTX 3090 24GB; shared server — never grab other GPUs).
+# Default GPU 7 (A6000 48GB) = main pipeline; GPU 8 (RTX 3090 24GB) is the
+# second worker — run those jobs with an explicit CUDA_VISIBLE_DEVICES=8.
 # CUDA_DEVICE_ORDER=PCI_BUS_ID makes CUDA use the same GPU numbering as
 # nvidia-smi; without it CUDA orders mixed GPUs fastest-first, so the number
 # can silently land on a different physical card (we saw it pick smi-#6).
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
-export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-8}"
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-7}"
 
 # conda env used ONLY for the TRL training steps (sft_lora.py, merge_lora.py).
 # Inference (vllm 0.6.1 cu118) stays in the env you launch the script from.
